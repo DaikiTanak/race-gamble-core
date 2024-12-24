@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator, ConfigDict
+from pydantic import BaseModel, model_validator, ConfigDict, field_serializer
 from typing import Self
 import numpy as np
 from numpy.typing import NDArray
@@ -25,6 +25,18 @@ class EvaluationStatisticResults(BaseModel):
     return_amount_variance: float  # 払い戻し金額の分散
     return_amount_std: float  # 払い戻し金額の標準偏差
     sharpe_ratio: float  # シャープレシオ
+
+    @field_serializer(
+        "tekityu_rate",
+        "bet_race_rate",
+        "total_roi",
+        "return_amount_average",
+        "return_amount_variance",
+        "return_amount_std",
+        "sharpe_ratio",
+    )
+    def round_float(self, value: float) -> float:
+        return round(value, 3)
 
     def __str__(self) -> str:
         return self.model_dump_json(indent=2)
