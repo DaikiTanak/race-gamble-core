@@ -1,4 +1,4 @@
-from schemas.evaluation_results import EvaluationResults
+from race_gamble_core.schemas.evaluation_results import EvaluationResults
 import numpy as np
 
 
