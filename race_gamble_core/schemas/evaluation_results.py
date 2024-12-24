@@ -82,6 +82,7 @@ class EvaluationResults(BaseModel):
         return self
 
     def calc_statistic_results(self) -> EvaluationStatisticResults:
+        # パフォーマンス統計値の計算
 
         num_records = len(self.race_identifiers)
 
@@ -90,10 +91,9 @@ class EvaluationResults(BaseModel):
         arr_race_identifiers: NDArray = np.array(self.race_identifiers)
         arr_flag_bet_targets: NDArray = np.array(flag_bet_targets)
 
-        num_bet_races = np.unique(arr_race_identifiers[arr_flag_bet_targets]).size
-        num_all_races = np.unique(arr_race_identifiers).size
-
-        num_bets = flag_bet_targets.count(True)
+        num_bet_races = int(np.unique(arr_race_identifiers[arr_flag_bet_targets]).size)
+        num_all_races = int(np.unique(arr_race_identifiers).size)
+        num_bets = int(flag_bet_targets.count(True))
 
         # ベット対象のオッズに対する払い戻し金額のリストを作成(ハズレは0払い戻しとして含む)
         list_return_amount = []
@@ -112,8 +112,8 @@ class EvaluationResults(BaseModel):
         flag_tekityu_orders = [self.flag_ground_truth_orders[i] and flag_bet_targets[i] for i in range(num_records)]
         num_tekityu = [1 for return_amount in flag_tekityu_orders if return_amount].count(1)
         assert (
-            0 < num_bet_races <= num_bets
-        ), f"参加レース数は購入回数よりも少ないはずです: {num_bet_races} < {num_bets}"
+            0 <= num_bet_races <= num_bets
+        ), f"参加レース数は購入ベット数以下であるはずです: {num_bet_races} <= {num_bets}"
 
         tekityu_rate = num_tekityu / num_bets if num_bets > 0 else 0
         bet_race_rate = num_bet_races / num_all_races if num_all_races > 0 else 0
