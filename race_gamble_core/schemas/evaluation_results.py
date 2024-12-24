@@ -120,7 +120,7 @@ class EvaluationResults(BaseModel):
 
         total_return_amount = sum(list_return_amount)
         total_bet_amount = sum(self.bet_amounts)
-        total_profit = total_return_amount - total_bet_amount
+        total_profit = int(total_return_amount - total_bet_amount)
         total_roi = total_profit / total_bet_amount if total_bet_amount > 0 else 0
 
         return_amount_average = float(np.mean(list_return_amount))
