@@ -9,21 +9,22 @@ class EvaluationStatisticResults(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     # 以下は自動計算される統計値フィールド
-    total_bet_amount: int = 0  # 総賭け金
-    num_bet_races: int = 0  # 参加レース数
-    num_all_races: int = 0  # 全レース数
-    num_bets: int = 0  # 購入回数
-    num_tekityu: int = 0  # 的中回数
-    tekityu_rate: float = 0  # 的中率
-    bet_race_rate: float = 0  # 参加レース率
-    total_profit: int = 0  # 総利益金額
-    total_roi: float = 0  # 総利益率
-    total_return_amount: int = 0  # 総払い戻し金額
+    num_bet_races: int  # 参加レース数
+    num_all_races: int  # 全レース数
+    num_bets: int  # 購入回数
+    num_tekityu: int  # 的中回数
+    tekityu_rate: float  # 的中率
+    bet_race_rate: float  # 参加レース率
 
-    return_amount_average: float = 0  # 払い戻し金額の平均
-    return_amount_variance: float = 0  # 払い戻し金額の分散
-    return_amount_std: float = 0  # 払い戻し金額の標準偏差
-    sharpe_ratio: float = 0  # シャープレシオ
+    total_bet_amount: int  # 総賭け金
+    total_return_amount: int  # 総払い戻し金額
+    total_profit: int  # 総利益金額
+    total_roi: float  # 総利益率
+
+    return_amount_average: float  # 払い戻し金額の平均
+    return_amount_variance: float  # 払い戻し金額の分散
+    return_amount_std: float  # 払い戻し金額の標準偏差
+    sharpe_ratio: float  # シャープレシオ
 
     def __str__(self) -> str:
         return self.model_dump_json(indent=2)
@@ -76,19 +77,28 @@ class EvaluationResults(BaseModel):
 
         arr_race_identifiers: NDArray = np.array(self.race_identifiers)
         arr_flag_bet_targets: NDArray = np.array(flag_bet_targets)
-        arr_confirmed_odds: NDArray = np.array(self.confirmed_odds)
 
         num_bet_races = np.unique(arr_race_identifiers[arr_flag_bet_targets]).size
         num_all_races = np.unique(arr_race_identifiers).size
 
-        flag_tekityu_orders = [self.flag_ground_truth_orders[i] and flag_bet_targets[i] for i in range(num_records)]
-
-        list_return_amount = (
-            arr_confirmed_odds[flag_tekityu_orders] * np.array(self.bet_amounts)[flag_tekityu_orders]
-        ).tolist()
-
         num_bets = flag_bet_targets.count(True)
-        num_tekityu = [1 for return_amount in list_return_amount if return_amount > 0].count(1)
+
+        # ベット対象のオッズに対する払い戻し金額のリストを作成(ハズレは0払い戻しとして含む)
+        list_return_amount = []
+        for i in range(num_records):
+            if flag_bet_targets[i]:  # ベット対象
+                if self.flag_ground_truth_orders[i]:
+                    # あたり
+                    return_amount = self.bet_amounts[i] * self.confirmed_odds[i]
+                else:
+                    # ハズレ
+                    return_amount = 0
+                list_return_amount.append(return_amount)
+        assert len(list_return_amount) == num_bets, "購入回数と払い戻し金額リストの長さが一致しません"
+
+        # ベット対象かつ的中かを表すフラグlist
+        flag_tekityu_orders = [self.flag_ground_truth_orders[i] and flag_bet_targets[i] for i in range(num_records)]
+        num_tekityu = [1 for return_amount in flag_tekityu_orders if return_amount].count(1)
         assert (
             0 < num_bet_races <= num_bets
         ), f"参加レース数は購入回数よりも少ないはずです: {num_bet_races} < {num_bets}"
@@ -107,6 +117,8 @@ class EvaluationResults(BaseModel):
         sharpe_ratio = total_profit / return_amount_std if return_amount_std > 0 else 0
 
         return EvaluationStatisticResults(
+            num_bet_races=num_bet_races,
+            num_all_races=num_all_races,
             total_bet_amount=total_bet_amount,
             num_bets=num_bets,
             num_tekityu=num_tekityu,
