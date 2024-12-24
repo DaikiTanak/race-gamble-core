@@ -35,9 +35,9 @@ class EvaluationResults(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     race_identifiers: list[str]  # レース識別子
-    confirmed_odds: list[float]  # 確定オッズ. 払い戻し
+    confirmed_odds: list[float]  # 確定オッズ. 払い戻し倍率
     flag_ground_truth_orders: list[bool]  # 的中着順フラグ
-    bet_amounts: list[int]  # 買い付け金額リスト
+    bet_amounts: list[int]  # 買い付け金額リスト。0は買い付けなしを表す
 
     @staticmethod
     def _check_equal_lengths(*lists):
