@@ -118,8 +118,8 @@ class EvaluationResults(BaseModel):
         tekityu_rate = num_tekityu / num_bets if num_bets > 0 else 0
         bet_race_rate = num_bet_races / num_all_races if num_all_races > 0 else 0
 
-        total_return_amount = sum(list_return_amount)
-        total_bet_amount = sum(self.bet_amounts)
+        total_return_amount = int(sum(list_return_amount))
+        total_bet_amount = int(sum(self.bet_amounts))
         total_profit = int(total_return_amount - total_bet_amount)
         total_roi = total_profit / total_bet_amount if total_bet_amount > 0 else 0
 
