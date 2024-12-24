@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_serializer
-from race_gamble_core.schemas.bet_type import BetType
+from ..schemas.bet_type import BetType
 from typing import Self
 
 

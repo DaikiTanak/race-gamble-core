@@ -1,6 +1,6 @@
 from typing import NewType
 from pydantic import BaseModel, field_validator
-from race_gamble_core.schemas.order import Order
+from ..schemas.order import Order
 
 import logging
 
