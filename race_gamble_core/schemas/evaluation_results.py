@@ -123,10 +123,16 @@ class EvaluationResults(BaseModel):
         total_profit = int(total_return_amount - total_bet_amount)
         total_roi = total_profit / total_bet_amount if total_bet_amount > 0 else 0
 
-        return_amount_average = float(np.mean(list_return_amount))
-        return_amount_variance = float(np.var(list_return_amount))
-        return_amount_std = float(np.std(list_return_amount))
-        sharpe_ratio = total_profit / return_amount_std if return_amount_std > 0 else 0
+        if len(list_return_amount) == 0:
+            return_amount_average = 0
+            return_amount_variance = 0
+            return_amount_std = 0
+            sharpe_ratio = 0
+        else:
+            return_amount_average = float(np.mean(list_return_amount))
+            return_amount_variance = float(np.var(list_return_amount))
+            return_amount_std = float(np.std(list_return_amount))
+            sharpe_ratio = total_profit / return_amount_std if return_amount_std > 0 else 0
 
         return EvaluationStatisticResults(
             num_bet_races=num_bet_races,
