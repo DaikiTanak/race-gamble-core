@@ -1,5 +1,6 @@
 from race_gamble_core.schemas.evaluation_results import EvaluationResults
 import numpy as np
+import pytest
 
 
 class TestEvaluationResults:
@@ -12,6 +13,24 @@ class TestEvaluationResults:
         )
 
         assert len(eval_results.race_identifiers) == 10
+
+    def test_construct_invalid_bets(self):
+        with pytest.raises(ValueError):
+            _ = EvaluationResults(
+                race_identifiers=[f"race{i}" for i in range(1)],
+                confirmed_odds=[15],
+                flag_ground_truth_orders=[True],
+                bet_amounts=[110],
+            )
+
+    def test_construct_diff_lengths(self):
+        with pytest.raises(ValueError):
+            _ = EvaluationResults(
+                race_identifiers=[f"race{i}" for i in range(10000)],
+                confirmed_odds=[15],
+                flag_ground_truth_orders=[True],
+                bet_amounts=[110],
+            )
 
     def test_calc_statistic_results(self):
         eval_results = EvaluationResults(

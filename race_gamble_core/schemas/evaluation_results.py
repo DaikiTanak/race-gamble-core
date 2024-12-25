@@ -81,7 +81,8 @@ class EvaluationResults(BaseModel):
     bet_amounts: list[int]  # 買い付け金額リスト。0は買い付けなしを表す
 
     @field_validator("bet_amounts")
-    def check_bet_amounts_100_divided(self, value: list[int]) -> list[int]:
+    @classmethod
+    def check_bet_amounts_100_divided(cls, value: list[int]) -> list[int]:
         for bet_amount in value:
             if bet_amount % 100 != 0:
                 raise ValueError("bet_amount must be multiple of 100")
