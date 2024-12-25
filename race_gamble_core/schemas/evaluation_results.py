@@ -24,7 +24,7 @@ class EvaluationStatisticResults(BaseModel):
     return_amount_average: float  # 払い戻し金額の平均
     return_amount_variance: float  # 払い戻し金額の分散
     return_amount_std: float  # 払い戻し金額の標準偏差
-    sharpe_ratio: float  # シャープレシオ
+    sharp_ratio: float  # シャープレシオ
 
     @field_serializer(
         "tekityu_rate",
@@ -33,7 +33,7 @@ class EvaluationStatisticResults(BaseModel):
         "return_amount_average",
         "return_amount_variance",
         "return_amount_std",
-        "sharpe_ratio",
+        "sharp_ratio",
     )
     def round_float(self, value: float) -> float:
         return round(value, 3)
@@ -43,6 +43,8 @@ class EvaluationStatisticResults(BaseModel):
 
 
 class EvaluationResults(BaseModel):
+    """買い付け戦略の評価結果を格納するクラス"""
+
     # 買い付け戦略の評価結果
     model_config = ConfigDict(frozen=True)
 
@@ -82,7 +84,11 @@ class EvaluationResults(BaseModel):
         return self
 
     def calc_statistic_results(self) -> EvaluationStatisticResults:
-        # パフォーマンス統計値の計算
+        """パフォーマンス統計値の計算
+
+        Returns:
+            EvaluationStatisticResults: 評価結果の統計値
+        """
 
         num_records = len(self.race_identifiers)
 
@@ -127,12 +133,12 @@ class EvaluationResults(BaseModel):
             return_amount_average = 0
             return_amount_variance = 0
             return_amount_std = 0
-            sharpe_ratio = 0
+            sharp_ratio = 0
         else:
             return_amount_average = float(np.mean(list_return_amount))
             return_amount_variance = float(np.var(list_return_amount))
             return_amount_std = float(np.std(list_return_amount))
-            sharpe_ratio = total_profit / return_amount_std if return_amount_std > 0 else 0
+            sharp_ratio = total_profit / return_amount_std if return_amount_std > 0 else 0
 
         return EvaluationStatisticResults(
             num_bet_races=num_bet_races,
@@ -148,5 +154,5 @@ class EvaluationResults(BaseModel):
             return_amount_average=return_amount_average,
             return_amount_variance=return_amount_variance,
             return_amount_std=return_amount_std,
-            sharpe_ratio=sharpe_ratio,
+            sharp_ratio=sharp_ratio,
         )
