@@ -5,6 +5,33 @@ from numpy.typing import NDArray
 
 
 class EvaluationStatisticResults(BaseModel):
+    """_summary_
+
+    Args:
+        BaseModel (_type_): _description_
+
+    Attributes:
+        num_bet_races (int): 参加レース数
+        num_all_races (int): 全レース数
+        num_bets (int): 購入回数
+        num_tekityu (int): 的中回数
+        tekityu_rate (float): 的中率
+        bet_race_rate (float): 参加レース率
+
+        total_bet_amount (int): 総賭け金
+        total_return_amount (int): 総払い戻し金額
+        total_profit (int): 総利益金額
+        total_roi (float): 総利益率
+
+        return_amount_average (float): 払い戻し金額の平均(外れは0払い戻しとして含む)
+        return_amount_variance (float): 払い戻し金額の分散(外れは0払い戻しとして含む)
+        return_amount_std (float): 払い戻し金額の標準偏差(外れは0払い戻しとして含む)
+        sharp_ratio (float): シャープレシオ(利益額を標準偏差で割った値)
+
+    Returns:
+        _type_: _description_
+    """
+
     # 買い付け戦略の評価結果の統計値
     model_config = ConfigDict(frozen=True)
 
