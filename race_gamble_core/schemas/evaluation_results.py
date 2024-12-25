@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator, ConfigDict, field_serializer
+from pydantic import BaseModel, model_validator, ConfigDict, field_serializer, field_validator
 from typing import Self
 import numpy as np
 from numpy.typing import NDArray
@@ -79,6 +79,13 @@ class EvaluationResults(BaseModel):
     confirmed_odds: list[float]  # 確定オッズ. 払い戻し倍率
     flag_ground_truth_orders: list[bool]  # 的中着順フラグ
     bet_amounts: list[int]  # 買い付け金額リスト。0は買い付けなしを表す
+
+    @field_validator("bet_amounts")
+    def check_bet_amounts_100_divided(self, value: list[int]) -> list[int]:
+        for bet_amount in value:
+            if bet_amount % 100 != 0:
+                raise ValueError("bet_amount must be multiple of 100")
+        return value
 
     @staticmethod
     def _check_equal_lengths(*lists):
