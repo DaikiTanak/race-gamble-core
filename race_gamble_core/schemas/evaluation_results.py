@@ -110,23 +110,18 @@ class EvaluationResults(BaseModel):
         ), "length of input lists must be the same"
         return self
 
-    def calc_statistic_results(self) -> EvaluationStatisticResults:
-        """パフォーマンス統計値の計算
+    def _get_flag_bet_targets(self) -> list[bool]:
+        # ベット対象とするのかどうかのフラグリストを取得
+        return [True if bet_amount > 0 else False for bet_amount in self.bet_amounts]
+
+    def _get_return_amounts(self) -> list[int]:
+        """払い戻し金額リストの取得
 
         Returns:
-            EvaluationStatisticResults: 評価結果の統計値
+            list[int]: 払い戻し金額リスト
         """
-
+        flag_bet_targets = self._get_flag_bet_targets()
         num_records = len(self.race_identifiers)
-
-        flag_bet_targets = [True if bet_amount > 0 else False for bet_amount in self.bet_amounts]
-
-        arr_race_identifiers: NDArray = np.array(self.race_identifiers)
-        arr_flag_bet_targets: NDArray = np.array(flag_bet_targets)
-
-        num_bet_races = int(np.unique(arr_race_identifiers[arr_flag_bet_targets]).size)
-        num_all_races = int(np.unique(arr_race_identifiers).size)
-        num_bets = int(flag_bet_targets.count(True))
 
         # ベット対象のオッズに対する払い戻し金額のリストを作成(ハズレは0払い戻しとして含む)
         list_return_amount = []
@@ -139,6 +134,28 @@ class EvaluationResults(BaseModel):
                     # ハズレ
                     return_amount = 0
                 list_return_amount.append(return_amount)
+        return list_return_amount
+
+    def calc_statistic_results(self) -> EvaluationStatisticResults:
+        """パフォーマンス統計値の計算
+
+        Returns:
+            EvaluationStatisticResults: 評価結果の統計値
+        """
+
+        num_records = len(self.race_identifiers)
+
+        flag_bet_targets = self._get_flag_bet_targets()
+
+        arr_race_identifiers: NDArray = np.array(self.race_identifiers)
+        arr_flag_bet_targets: NDArray = np.array(flag_bet_targets)
+
+        num_bet_races = int(np.unique(arr_race_identifiers[arr_flag_bet_targets]).size)
+        num_all_races = int(np.unique(arr_race_identifiers).size)
+        num_bets = int(flag_bet_targets.count(True))
+
+        # ベット対象のオッズに対する払い戻し金額のリストを作成(ハズレは0払い戻しとして含む)
+        list_return_amount = self._get_return_amounts()
         assert len(list_return_amount) == num_bets, "購入回数と払い戻し金額リストの長さが一致しません"
 
         # ベット対象かつ的中かを表すフラグlist
