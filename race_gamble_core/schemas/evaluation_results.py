@@ -53,6 +53,8 @@ class EvaluationStatisticResults(BaseModel):
     return_amount_std: float  # 払い戻し金額の標準偏差
     sharp_ratio: float  # シャープレシオ
 
+    # @TODO: N以上のパーセンたいるの収益が全体に与えている影響など。99パーセンタイル以上が30%を占めていたりしたら、ロバストとは言えない
+
     @field_serializer(
         "tekityu_rate",
         "bet_race_rate",
