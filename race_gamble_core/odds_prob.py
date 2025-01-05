@@ -2,6 +2,7 @@ class OddsProbCalculator:
     """オッズと確率値の数学的な変換を行うクラス"""
 
     def __init__(self, koujo_rate: float = 0.25):
+        assert 0 <= koujo_rate <= 1, f"koujo_rate: {koujo_rate} must be in [0, 1]"
         self.koujo_rate = koujo_rate  # 控除率
 
     def odds_to_prob(self, odds_value: float) -> float:
