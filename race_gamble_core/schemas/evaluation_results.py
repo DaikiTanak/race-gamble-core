@@ -71,10 +71,9 @@ class EvaluationStatisticResults(BaseModel):
         return self.model_dump_json(indent=2)
 
 
-class EvaluationResults(BaseModel):
-    """買い付け戦略の評価結果を格納するクラス"""
+class BetStrategyResults(BaseModel):
+    """買い付け戦略を行使した結果を格納する。評価の結果等を呼び出すことができるクラス"""
 
-    # 買い付け戦略の評価結果
     model_config = ConfigDict(frozen=True)
 
     race_identifiers: list[str]  # レース識別子
@@ -90,29 +89,36 @@ class EvaluationResults(BaseModel):
                 raise ValueError("bet_amount must be multiple of 100")
         return value
 
-    @staticmethod
-    def _check_equal_lengths(*lists):
-        """
-        可変個のリストを受け取り、それらの長さがすべて等しいかを確認する関数。
-
-        Parameters:
-            *lists: 可変個のリスト
-
-        Returns:
-            bool: すべてのリストの長さが等しい場合はTrue、それ以外はFalse
-        """
-        if not lists:
-            return True  # リストが渡されない場合はTrueとする（特に問題がないケースとして）
-
-        # 最初のリストの長さを取得
-        first_length = len(lists[0])
-
-        # 他のリストの長さと比較
-        return all(len(lst) == first_length for lst in lists)
+    @field_validator("race_identifiers")
+    @classmethod
+    def check_duplicated_race_ids(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("レースに重複あり")
+        return value
 
     @model_validator(mode="after")
     def check_list_length(self) -> Self:
-        assert self._check_equal_lengths(
+
+        def _check_equal_lengths(*lists):
+            """
+            可変個のリストを受け取り、それらの長さがすべて等しいかを確認する関数。
+
+            Parameters:
+                *lists: 可変個のリスト
+
+            Returns:
+                bool: すべてのリストの長さが等しい場合はTrue、それ以外はFalse
+            """
+            if not lists:
+                return True  # リストが渡されない場合はTrueとする（特に問題がないケースとして）
+
+            # 最初のリストの長さを取得
+            first_length = len(lists[0])
+
+            # 他のリストの長さと比較
+            return all(len(lst) == first_length for lst in lists)
+
+        assert _check_equal_lengths(
             self.race_identifiers,
             self.confirmed_odds,
             self.flag_ground_truth_orders,
@@ -121,25 +127,30 @@ class EvaluationResults(BaseModel):
         return self
 
     def _get_flag_bet_targets(self) -> list[bool]:
-        # ベット対象とするのかどうかのフラグリストを取得
+        # 各レースについて、ベット対象とするのかどうかのフラグリストを取得
         return [True if bet_amount > 0 else False for bet_amount in self.bet_amounts]
 
-    def _get_return_amounts(self) -> list[int]:
+    def _get_return_amounts(
+        self,
+        flag_bet_targets: list[bool],
+        flag_ground_truth_orders: list[bool],
+        bet_amounts: list[int],
+        confirmed_odds: list[float],
+    ) -> list[int]:
         """払い戻し金額リストの取得
 
         Returns:
             list[int]: 払い戻し金額リスト
         """
-        flag_bet_targets = self._get_flag_bet_targets()
-        num_records = len(self.race_identifiers)
+        num_records = len(flag_bet_targets)
 
         # ベット対象のオッズに対する払い戻し金額のリストを作成(ハズレは0払い戻しとして含む)
         list_return_amount = []
         for i in range(num_records):
             if flag_bet_targets[i]:  # ベット対象
-                if self.flag_ground_truth_orders[i]:
+                if flag_ground_truth_orders[i]:
                     # あたり
-                    return_amount = self.bet_amounts[i] * self.confirmed_odds[i]
+                    return_amount = bet_amounts[i] * confirmed_odds[i]
                 else:
                     # ハズレ
                     return_amount = 0
@@ -165,7 +176,12 @@ class EvaluationResults(BaseModel):
         num_bets = int(flag_bet_targets.count(True))
 
         # ベット対象のオッズに対する払い戻し金額のリストを作成(ハズレは0払い戻しとして含む)
-        list_return_amount = self._get_return_amounts()
+        list_return_amount = self._get_return_amounts(
+            flag_bet_targets=flag_bet_targets,
+            flag_ground_truth_orders=self.flag_ground_truth_orders,
+            bet_amounts=self.bet_amounts,
+            confirmed_odds=self.confirmed_odds,
+        )
         assert len(list_return_amount) == num_bets, "購入回数と払い戻し金額リストの長さが一致しません"
 
         # ベット対象かつ的中かを表すフラグlist
