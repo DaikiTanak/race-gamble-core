@@ -1,6 +1,6 @@
-from .schemas.evaluation_results import EvaluationResults, EvaluationStatisticResults
+from .schemas.evaluation_results import BetStrategyResults, EvaluationStatisticResults
 
 __all__ = [
-    "EvaluationResults",
+    "BetStrategyResults",
     "EvaluationStatisticResults",
 ]
