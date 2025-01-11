@@ -27,3 +27,14 @@ class TestBaseOrder:
     def test_keisyou(self):
         o = ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan)
         assert str(o) == "1-2"
+
+    def test_eq(self):
+        assert ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan) == ExampleOrder(
+            first_course=1, second_course=2, bet_type=ExampleBetType.nirentan
+        )
+        assert ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan) != ExampleOrder(
+            first_course=6, second_course=2, bet_type=ExampleBetType.nirentan
+        )
+        assert ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan) != ExampleOrder(
+            first_course=1, second_course=2, bet_type=ExampleBetType.sanrentan
+        )
