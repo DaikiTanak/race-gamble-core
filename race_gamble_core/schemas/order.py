@@ -4,7 +4,7 @@ from abc import abstractmethod
 
 
 class BaseOrder(BaseModel, frozen=True):
-    """着順に関する基底クラス
+    """着順(Order)に関する基底クラス
     利用する際には 2連単や3連単などの`bet_type`をメンバーに追加する
 
     e.g.
