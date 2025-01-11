@@ -1,12 +1,17 @@
 from pydantic import BaseModel, model_serializer
 from typing import Self
 from abc import abstractmethod
-from typing import Any
 
 
 class BaseOrder(BaseModel, frozen=True):
     """着順に関する基底クラス
-    利用する際には `bet_type`をメンバーに追加する
+    利用する際には 2連単や3連単などの`bet_type`をメンバーに追加する
+
+    e.g.
+
+    class ExampleBetType(StrEnum):
+        nirentan = "nirentan"
+        sanrentan = "sanrentan"
 
     Args:
         BaseModel (_type_): _description_
@@ -33,14 +38,19 @@ class BaseOrder(BaseModel, frozen=True):
     def __str__(self) -> str:
         return self._format_order()
 
+    def __post_init__(self):
+        self._validate_courses()
+
     @model_serializer
     def serialize_order(self) -> str:
         return self.__str__()
 
-    def _validate_courses(self):
-        """派生クラスで実装"""
+    @abstractmethod
+    def _validate_courses(self) -> None:
+        """派生クラスで実装。コースの組み合わせのバリデーションを実装する。無効な着順の場合は例外を投げる"""
         raise NotImplementedError
 
+    @abstractmethod
     def _format_order(self) -> str:
-        """派生クラスで実装"""
+        """派生クラスで実装。着順を文字列として表現する。連複系は小さい順にソートして表示する"""
         raise NotImplementedError

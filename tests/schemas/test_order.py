@@ -3,7 +3,8 @@ from enum import StrEnum
 
 
 class ExampleBetType(StrEnum):
-    nirentan = "二連単"
+    nirentan = "nirentan"
+    sanrentan = "sanrentan"
 
 
 class ExampleOrder(BaseOrder, frozen=True):
@@ -14,9 +15,15 @@ class ExampleOrder(BaseOrder, frozen=True):
         pass
 
     def _format_order(self):
-        pass
+        if self.bet_type == ExampleBetType.nirentan:
+            return f"{self.first_course}-{self.second_course}"
+        elif self.bet_type == ExampleBetType.sanrentan:
+            return f"{self.first_course}-{self.second_course}-{self.third_course}"
+        else:
+            raise ValueError
 
 
 class TestBaseOrder:
     def test_keisyou(self):
-        _ = ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan)
+        o = ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan)
+        assert str(o) == "1-2"
