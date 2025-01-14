@@ -2,15 +2,8 @@ from pydantic import BaseModel, field_validator
 from ..schemas.order import BaseOrder
 
 
-class BaseOdds(BaseModel, frozen=True):
-    """オッズに関する基底クラス
-    利用する際には `order`をメンバーに追加する
-
-    e.g.
-
-    class ExampleBetType(StrEnum):
-        nirentan = "nirentan"
-        sanrentan = "sanrentan"
+class Odds(BaseModel, frozen=True):
+    """オッズを表すクラス
 
     Args:
         BaseModel (_type_): _description_
