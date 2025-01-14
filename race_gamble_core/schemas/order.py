@@ -41,6 +41,9 @@ class BaseOrder(BaseModel, frozen=True):
     def __post_init__(self):
         self._validate_courses()
 
+    def __lt__(self, other):
+        return self.__str__() < other.__str__()
+
     @model_serializer
     def serialize_order(self) -> str:
         return self.__str__()
