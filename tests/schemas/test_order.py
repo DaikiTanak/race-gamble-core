@@ -38,3 +38,11 @@ class TestBaseOrder:
         assert ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan) != ExampleOrder(
             first_course=1, second_course=2, bet_type=ExampleBetType.sanrentan
         )
+
+    def test_lt(self):
+        assert ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan) < ExampleOrder(
+            first_course=1, second_course=3, bet_type=ExampleBetType.nirentan
+        )
+        assert ExampleOrder(first_course=1, second_course=2, bet_type=ExampleBetType.nirentan) < ExampleOrder(
+            first_course=2, second_course=1, bet_type=ExampleBetType.nirentan
+        )
