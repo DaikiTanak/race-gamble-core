@@ -5,13 +5,6 @@
 
 レース系公営ギャンブルに共通する処理をまとめるコアライブラリ
 
-
-## Usage/Examples
-
-```python
-from race_gamble_core.odds_prob import OddsProbCalculator
-
-# map public odds to its probability
-public_odds = 1.5
-OddsProbCalculator().odds_to_prob(public_odds)
-```
+- オッズ
+- 着順
+- 戦略評価
