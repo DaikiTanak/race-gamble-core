@@ -1,25 +1,15 @@
-from pydantic import BaseModel, model_serializer
+from pydantic import BaseModel, model_serializer, field_validator, model_validator
 from typing import Self
-from abc import abstractmethod
+from .bet_type import BetType
 
 
-class BaseOrder(BaseModel, frozen=True):
+class Order(BaseModel, frozen=True):
     """着順(Order)に関する基底クラス。連複での順番ソートなどのロジックを内包する
     利用する際には 2連単や3連単などの`bet_type`をメンバーに追加する
-
-    e.g.
-
-    class ExampleBetType(StrEnum):
-        nirentan = "nirentan"
-        sanrentan = "sanrentan"
 
     Args:
         BaseModel (_type_): _description_
         frozen (bool, optional): _description_. Defaults to True.
-
-    Raises:
-        NotImplementedError: _description_
-        NotImplementedError: _description_
 
     Returns:
         _type_: _description_
@@ -28,18 +18,39 @@ class BaseOrder(BaseModel, frozen=True):
     first_course: int
     second_course: int | None = None
     third_course: int | None = None
+    bet_type: BetType
+
+    @field_validator("first_course", "second_course", "third_course")
+    @classmethod
+    def validate_course_number(cls, course_number: int | None) -> int | None:
+        if course_number is not None:
+            if not 1 <= course_number <= 9:
+                raise ValueError("Invalid course number.")
+        return course_number
+
+    @model_validator(mode="after")
+    def validate_courses(self) -> Self:
+        match self.bet_type:
+            case BetType.nirentan | BetType.nirenpuku:
+                # 二連系: 2コースが必要
+                if self.second_course is None or self.third_course is not None:
+                    raise ValueError("2連系では2コースを指定し、3コースは不要です。")
+
+            case BetType.sanrentan | BetType.sanrenpuku:
+                # 三連系: 3コースが必要
+                if self.second_course is None or self.third_course is None:
+                    raise ValueError("3連系では3コースを指定する必要があります。")
+
+            case _:
+                raise ValueError(f"bet_type {self.bet_type} is not supported")
+
+        return self
 
     def __hash__(self) -> int:
         return hash((self.__class__, self.__str__()))
 
     def __eq__(self, other: Self) -> bool:
         return self.__class__ == other.__class__ and self.__str__() == other.__str__()
-
-    def __str__(self) -> str:
-        return self._format_order()
-
-    def __post_init__(self):
-        self._validate_courses()
 
     def __lt__(self, other):
         return self.__str__() < other.__str__()
@@ -60,30 +71,108 @@ class BaseOrder(BaseModel, frozen=True):
     def serialize_order(self) -> str:
         return self.__str__()
 
-    @abstractmethod
-    def _validate_courses(self) -> None:
-        """派生クラスで実装。コースの組み合わせのバリデーションを実装する。無効な着順の場合は例外を投げる
+    @classmethod
+    def create_from_str_order(cls, order_str: str, bet_type: BetType) -> Self:
+        # "1-2-3"のような文字列からOrderを生成
+        courses = order_str.split("-")
+        if len(courses) == 1:
+            return cls(bet_type=bet_type, first_course=int(courses[0]))
+        elif len(courses) == 2:
+            return cls(bet_type=bet_type, first_course=int(courses[0]), second_course=int(courses[1]))
+        elif len(courses) == 3:
+            return cls(
+                bet_type=bet_type,
+                first_course=int(courses[0]),
+                second_course=int(courses[1]),
+                third_course=int(courses[2]),
+            )
+        else:
+            raise ValueError("order_str must be 1-3 courses")
 
-        主に人数の面でのバリデーションを行うとよい
-
-        e.g.
-
+    def _format_order(self) -> str:
+        """コースをフォーマットして返す. 連複系の場合は昇順ソートして返す"""
         match self.bet_type:
-            case BetType.nirentan | BetType.nirenpuku:
-                # 二連系: 2コースが必要
-                if self.second_course is None:
-                    raise ValueError("二連系では2コースを指定し、3コースは不要です。")
-            case BetType.sanrentan | BetType.sanrenpuku:
-                # 三連系: 3コースが必要
-                if self.second_course is None or self.third_course is None:
-                    raise ValueError("三連系では3コースを指定する必要があります。")
+            case BetType.tansyou:
+                return f"{self.first_course}"
+
+            case BetType.nirentan:
+                return f"{self.first_course}-{self.second_course}"
+
+            case BetType.nirenpuku:
+                assert self.second_course is not None
+                sorted_courses = sorted([self.first_course, self.second_course])
+                return f"{sorted_courses[0]}-{sorted_courses[1]}"
+
+            case BetType.sanrentan:
+                return f"{self.first_course}-{self.second_course}-{self.third_course}"
+
+            case BetType.sanrenpuku:
+                assert self.second_course is not None and self.third_course is not None
+                sorted_courses = sorted([self.first_course, self.second_course, self.third_course])
+                return f"{sorted_courses[0]}-{sorted_courses[1]}-{sorted_courses[2]}"
             case _:
                 raise ValueError(f"bet_type {self.bet_type} is not supported")
 
-        """
-        raise NotImplementedError
+    def __str__(self) -> str:
+        return self._format_order()
 
-    @abstractmethod
-    def _format_order(self) -> str:
-        """派生クラスで実装。着順を文字列として表現する。連複系は小さい順にソートして表示する"""
-        raise NotImplementedError
+    @classmethod
+    def get_all_order_patterns(cls, bet_type: BetType, num_racers: int) -> list[Self]:
+        match bet_type:
+            case BetType.tansyou:
+                return sorted(
+                    list(set(cls(bet_type=BetType.tansyou, first_course=i) for i in range(1, num_racers + 1)))
+                )
+
+            case BetType.nirentan:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.nirentan, first_course=i, second_course=j)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            if i != j
+                        )
+                    )
+                )
+
+            case BetType.nirenpuku:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.nirenpuku, first_course=i, second_course=j)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            if i != j
+                        )
+                    )
+                )
+
+            case BetType.sanrentan:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.sanrentan, first_course=i, second_course=j, third_course=k)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            for k in range(1, num_racers + 1)
+                            if i != j and j != k and i != k
+                        )
+                    )
+                )
+
+            case BetType.sanrenpuku:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.sanrenpuku, first_course=i, second_course=j, third_course=k)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            for k in range(1, num_racers + 1)
+                            if i != j and j != k and i != k
+                        )
+                    )
+                )
+
+            case _:
+                raise ValueError(f"bet_type {bet_type} is not supported")
