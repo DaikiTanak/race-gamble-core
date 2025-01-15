@@ -44,6 +44,15 @@ class BaseOrder(BaseModel, frozen=True):
     def __lt__(self, other):
         return self.__str__() < other.__str__()
 
+    def get_first_course(self) -> int:
+        return int(self._format_order().split("-")[0])
+
+    def get_second_course(self) -> int:
+        return int(self._format_order().split("-")[1])
+
+    def get_third_course(self) -> int:
+        return int(self._format_order().split("-")[2])
+
     @model_serializer
     def serialize_order(self) -> str:
         return self.__str__()
