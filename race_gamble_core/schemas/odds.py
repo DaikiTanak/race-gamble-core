@@ -1,23 +1,11 @@
 from pydantic import BaseModel, field_validator
-from ..schemas.order import BaseOrder
+from ..schemas.order import Order
 
 
 class Odds(BaseModel, frozen=True):
-    """オッズを表すクラス
+    """オッズを表すクラス"""
 
-    Args:
-        BaseModel (_type_): _description_
-        frozen (bool, optional): _description_. Defaults to True.
-
-    Raises:
-        NotImplementedError: _description_
-        NotImplementedError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-
-    order: BaseOrder  # 実際の利用時にはBaseOrderを継承したクラスのインスタンスを渡す
+    order: Order
     odds: float
 
     @field_validator("odds")

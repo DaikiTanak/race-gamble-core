@@ -1,4 +1,4 @@
-from race_gamble_core.schemas.evaluation_results import BetStrategyResults
+from race_gamble_core import BetStrategyResults
 import numpy as np
 import pytest
 
