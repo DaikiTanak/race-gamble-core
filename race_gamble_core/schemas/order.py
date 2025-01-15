@@ -115,3 +115,64 @@ class Order(BaseModel, frozen=True):
 
     def __str__(self) -> str:
         return self._format_order()
+
+    @classmethod
+    def get_all_order_patterns(cls, bet_type: BetType, num_racers: int) -> list[Self]:
+        match bet_type:
+            case BetType.tansyou:
+                return sorted(
+                    list(set(cls(bet_type=BetType.tansyou, first_course=i) for i in range(1, num_racers + 1)))
+                )
+
+            case BetType.nirentan:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.nirentan, first_course=i, second_course=j)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            if i != j
+                        )
+                    )
+                )
+
+            case BetType.nirenpuku:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.nirenpuku, first_course=i, second_course=j)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            if i != j
+                        )
+                    )
+                )
+
+            case BetType.sanrentan:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.sanrentan, first_course=i, second_course=j, third_course=k)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            for k in range(1, num_racers + 1)
+                            if i != j and j != k and i != k
+                        )
+                    )
+                )
+
+            case BetType.sanrenpuku:
+                return sorted(
+                    list(
+                        set(
+                            cls(bet_type=BetType.sanrenpuku, first_course=i, second_course=j, third_course=k)
+                            for i in range(1, num_racers + 1)
+                            for j in range(1, num_racers + 1)
+                            for k in range(1, num_racers + 1)
+                            if i != j and j != k and i != k
+                        )
+                    )
+                )
+
+            case _:
+                raise ValueError(f"bet_type {bet_type} is not supported")
