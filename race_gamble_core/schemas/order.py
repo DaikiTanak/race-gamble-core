@@ -31,6 +31,11 @@ class Order(BaseModel, frozen=True):
     @model_validator(mode="after")
     def validate_courses(self) -> Self:
         match self.bet_type:
+            case BetType.tansyou:
+                # 単勝: 1コースが必要
+                if self.second_course is not None or self.third_course is not None:
+                    raise ValueError("単勝では2コース、3コースは不要です。")
+
             case BetType.nirentan | BetType.nirenpuku:
                 # 二連系: 2コースが必要
                 if self.second_course is None or self.third_course is not None:
