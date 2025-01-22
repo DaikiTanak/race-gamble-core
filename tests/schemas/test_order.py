@@ -1,5 +1,6 @@
-from race_gamble_core import Order, BetType
 import pytest
+
+from race_gamble_core import BetType, Order
 
 
 class TestBaseOrder:
@@ -61,3 +62,18 @@ class TestBaseOrder:
         assert o.get_first_course() == 3
         assert o.get_second_course() == 4
         assert o.get_third_course() == 6
+
+    def test_create_rentan_orders_from_renpuku(self):
+        orders = Order.create_rentan_orders_from_renpuku("2-3")
+        assert len(orders) == 2
+        assert orders[0] == Order(first_course=2, second_course=3, bet_type=BetType.nirentan)
+        assert orders[1] == Order(first_course=3, second_course=2, bet_type=BetType.nirentan)
+
+        orders = Order.create_rentan_orders_from_renpuku("1-2-3")
+        assert len(orders) == 6
+        assert orders[0] == Order(first_course=1, second_course=2, third_course=3, bet_type=BetType.sanrentan)
+        assert orders[1] == Order(first_course=1, second_course=3, third_course=2, bet_type=BetType.sanrentan)
+        assert orders[2] == Order(first_course=2, second_course=1, third_course=3, bet_type=BetType.sanrentan)
+        assert orders[3] == Order(first_course=2, second_course=3, third_course=1, bet_type=BetType.sanrentan)
+        assert orders[4] == Order(first_course=3, second_course=1, third_course=2, bet_type=BetType.sanrentan)
+        assert orders[5] == Order(first_course=3, second_course=2, third_course=1, bet_type=BetType.sanrentan)

@@ -1,5 +1,8 @@
-from pydantic import BaseModel, model_serializer, field_validator, model_validator
+import itertools
 from typing import Self
+
+from pydantic import BaseModel, field_validator, model_serializer, model_validator
+
 from .bet_type import BetType
 
 
@@ -120,6 +123,39 @@ class Order(BaseModel, frozen=True):
 
     def __str__(self) -> str:
         return self._format_order()
+
+    @classmethod
+    def create_rentan_orders_from_renpuku(cls, order_str: str) -> list[Self]:
+        # 連複のオーダーから連単のオーダーを生成する
+        courses = order_str.split("-")
+
+        if len(courses) == 2:
+            bet_type = BetType.nirentan
+
+            try:
+                cls.create_from_str_order(bet_type=BetType.nirenpuku, order_str=order_str)
+            except ValueError:
+                raise ValueError("invalid order for nirenpuku")
+
+        elif len(courses) == 3:
+            bet_type = BetType.sanrentan
+
+            try:
+                cls.create_from_str_order(bet_type=BetType.sanrenpuku, order_str=order_str)
+            except ValueError:
+                raise ValueError("invalid order for sanrenpuku")
+
+        else:
+            raise ValueError("order_str must be 2-3 courses")
+
+        rentan_perm = list(itertools.permutations(courses))
+
+        list_rentan_orders = []
+        for p in rentan_perm:
+            order = cls.create_from_str_order(bet_type=bet_type, order_str="-".join(p))
+            list_rentan_orders.append(order)
+
+        return list_rentan_orders
 
     @classmethod
     def get_all_order_patterns(cls, bet_type: BetType, num_racers: int) -> list[Self]:
