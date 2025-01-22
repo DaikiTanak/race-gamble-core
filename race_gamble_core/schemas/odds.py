@@ -25,6 +25,11 @@ class Odds(BaseModel, frozen=True):
     @classmethod
     def convert_odds_value_to_prob(cls, odds: float, koujo_rate: float = 0.25) -> float:
         # オッズを確率値に変換する
+
+        if odds == 0:
+            # 売り上げが0の場合はオッズが0になっている。その場合は確率も0とするのが適当
+            return 0
+
         prob = (1 / odds) * (1 - koujo_rate)
         assert 0 <= prob <= 1, f"prob: {prob}, odds: {odds}"
         return prob
