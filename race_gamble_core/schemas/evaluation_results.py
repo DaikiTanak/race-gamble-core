@@ -1,7 +1,14 @@
-from pydantic import BaseModel, model_validator, ConfigDict, field_serializer, field_validator
 from typing import Self
+
 import numpy as np
 from numpy.typing import NDArray
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 
 class EvaluationStatisticResults(BaseModel):
@@ -87,13 +94,6 @@ class BetStrategyResults(BaseModel):
         for bet_amount in value:
             if bet_amount % 100 != 0:
                 raise ValueError("bet_amount must be multiple of 100")
-        return value
-
-    @field_validator("race_identifiers")
-    @classmethod
-    def check_duplicated_race_ids(cls, value: list[str]) -> list[str]:
-        if len(value) != len(set(value)):
-            raise ValueError("レースに重複あり")
         return value
 
     @model_validator(mode="after")
