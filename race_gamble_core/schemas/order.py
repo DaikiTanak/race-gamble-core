@@ -1,4 +1,5 @@
 import itertools
+from functools import lru_cache
 from typing import Self
 
 from pydantic import BaseModel, field_validator, model_serializer, model_validator
@@ -219,57 +220,54 @@ class Order(BaseModel, frozen=True):
             case _:
                 raise ValueError(f"bet_type {bet_type} is not supported")
 
+    @lru_cache(maxsize=None)
+    def _prepare_order_idx_map(self, num_racers: int, bet_type: BetType) -> dict[str, int]:
+        """Orderを0-indexedのラベルに変換するためのマッピングを準備する"""
+        mapping = {}
+        idx = 0
+        match bet_type:
+            case BetType.tansyou:
+                return {str(i): i - 1 for i in range(1, num_racers + 1)}
+            case BetType.nirentan:
+                for i in range(1, num_racers + 1):
+                    for j in range(1, num_racers + 1):
+                        if i != j:
+                            mapping[f"{i}-{j}"] = idx
+                            idx += 1
+                return mapping
+            case BetType.nirenpuku:
+                for i in range(1, num_racers + 1):
+                    for j in range(1, num_racers + 1):
+                        if i < j:
+                            mapping[f"{i}-{j}"] = idx
+                            idx += 1
+                return mapping
+            case BetType.sanrentan:
+                for i in range(1, num_racers + 1):
+                    for j in range(1, num_racers + 1):
+                        for k in range(1, num_racers + 1):
+                            if i != j and j != k and i != k:
+                                mapping[f"{i}-{j}-{k}"] = idx
+                                idx += 1
+                return mapping
+            case BetType.sanrenpuku:
+                for i in range(1, num_racers + 1):
+                    for j in range(1, num_racers + 1):
+                        for k in range(1, num_racers + 1):
+                            if i < j and j < k:
+                                mapping[f"{i}-{j}-{k}"] = idx
+                                idx += 1
+                return mapping
+            case _:
+                raise ValueError(f"bet_type {bet_type} is not supported")
+
     def to_order_idx(self, num_racers: int = 6) -> int:
         """Orderを0-indexedのラベルに変換する"""
 
-        tansyou_mapping = {}
-        nirentan_mapping = {}
-        nirenpuku_mapping = {}
-        sanrentan_mapping = {}
-        sanrenpuku_mapping = {}
+        order_str = self._format_order()
+        order_idx_map = self._prepare_order_idx_map(num_racers, self.bet_type)
 
-        tansyou_increment = 0
-        nirentan_increment = 0
-        nirenpuku_increment = 0
-        sanrentan_increment = 0
-        sanrenpuku_increment = 0
+        if order_str not in order_idx_map:
+            raise ValueError(f"Order {order_str} is not valid for bet_type {self.bet_type}")
 
-        for i in range(1, num_racers + 1):
-            tansyou_mapping[str(i)] = tansyou_increment
-            tansyou_increment += 1
-
-            for j in range(1, num_racers + 1):
-                if i == j:
-                    continue
-
-                nirentan_mapping[f"{i}-{j}"] = nirentan_increment
-                nirentan_increment += 1
-
-                if i < j:
-                    nirenpuku_mapping[f"{i}-{j}"] = nirenpuku_increment
-                    nirenpuku_increment += 1
-
-                for k in range(1, num_racers + 1):
-                    if j == k or i == k:
-                        continue
-
-                    sanrentan_mapping[f"{i}-{j}-{k}"] = sanrentan_increment
-                    sanrentan_increment += 1
-
-                    if i < j and j < k:
-                        sanrenpuku_mapping[f"{i}-{j}-{k}"] = sanrenpuku_increment
-                        sanrenpuku_increment += 1
-
-        match self.bet_type:
-            case BetType.tansyou:
-                return tansyou_mapping[self._format_order()]
-            case BetType.nirentan:
-                return nirentan_mapping[self._format_order()]
-            case BetType.nirenpuku:
-                return nirenpuku_mapping[self._format_order()]
-            case BetType.sanrentan:
-                return sanrentan_mapping[self._format_order()]
-            case BetType.sanrenpuku:
-                return sanrenpuku_mapping[self._format_order()]
-            case _:
-                raise ValueError(f"bet_type {self.bet_type} is not supported")
+        return order_idx_map[order_str]
