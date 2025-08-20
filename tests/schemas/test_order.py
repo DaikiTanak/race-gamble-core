@@ -77,3 +77,39 @@ class TestBaseOrder:
         assert orders[3] == Order(first_course=2, second_course=3, third_course=1, bet_type=BetType.sanrentan)
         assert orders[4] == Order(first_course=3, second_course=1, third_course=2, bet_type=BetType.sanrentan)
         assert orders[5] == Order(first_course=3, second_course=2, third_course=1, bet_type=BetType.sanrentan)
+
+    def test_to_order_idx(self):
+        # 単勝
+        o = Order(first_course=1, bet_type=BetType.tansyou)
+        assert o.to_order_idx() == 0
+
+        o = Order(first_course=6, bet_type=BetType.tansyou)
+        assert o.to_order_idx() == 5
+
+        # 2連単
+        o = Order(first_course=1, second_course=2, bet_type=BetType.nirentan)
+        assert o.to_order_idx() == 0
+
+        o = Order(first_course=2, second_course=1, bet_type=BetType.nirentan)
+        assert o.to_order_idx() == 5
+
+        # 2連複
+        o = Order(first_course=1, second_course=2, bet_type=BetType.nirenpuku)
+        assert o.to_order_idx() == 0
+
+        o = Order(first_course=3, second_course=2, bet_type=BetType.nirenpuku)
+        assert o.to_order_idx() == 5
+
+        # 3連単
+        o = Order(first_course=1, second_course=2, third_course=3, bet_type=BetType.sanrentan)
+        assert o.to_order_idx() == 0
+
+        o = Order(first_course=6, second_course=5, third_course=4, bet_type=BetType.sanrentan)
+        assert o.to_order_idx() == 119
+
+        # 3連複
+        o = Order(first_course=1, second_course=2, third_course=3, bet_type=BetType.sanrenpuku)
+        assert o.to_order_idx() == 0
+
+        o = Order(first_course=6, second_course=5, third_course=4, bet_type=BetType.sanrenpuku)
+        assert o.to_order_idx() == 19
