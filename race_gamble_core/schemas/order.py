@@ -27,7 +27,7 @@ class Order(BaseModel, frozen=True):
     @classmethod
     def validate_course_number(cls, course_number: int | None) -> int | None:
         if course_number is not None:
-            if not 1 <= course_number <= 9:
+            if course_number <= 0:
                 raise ValueError("Invalid course number.")
         return course_number
 
