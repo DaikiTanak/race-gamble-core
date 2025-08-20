@@ -27,12 +27,13 @@ class Order(BaseModel, frozen=True):
     @classmethod
     def validate_course_number(cls, course_number: int | None) -> int | None:
         if course_number is not None:
-            if not 1 <= course_number <= 9:
+            if course_number <= 0:
                 raise ValueError("Invalid course number.")
         return course_number
 
     @model_validator(mode="after")
     def validate_courses(self) -> Self:
+        """コンストラクタでは連複系のコースがソートされて渡されているかはチェックしない"""
         match self.bet_type:
             case BetType.tansyou:
                 # 単勝: 1コースが必要
@@ -217,3 +218,58 @@ class Order(BaseModel, frozen=True):
 
             case _:
                 raise ValueError(f"bet_type {bet_type} is not supported")
+
+    def to_order_idx(self, num_racers: int = 6) -> int:
+        """Orderを0-indexedのラベルに変換する"""
+
+        tansyou_mapping = {}
+        nirentan_mapping = {}
+        nirenpuku_mapping = {}
+        sanrentan_mapping = {}
+        sanrenpuku_mapping = {}
+
+        tansyou_increment = 0
+        nirentan_increment = 0
+        nirenpuku_increment = 0
+        sanrentan_increment = 0
+        sanrenpuku_increment = 0
+
+        for i in range(1, num_racers + 1):
+            tansyou_mapping[str(i)] = tansyou_increment
+            tansyou_increment += 1
+
+            for j in range(1, num_racers + 1):
+                if i == j:
+                    continue
+
+                nirentan_mapping[f"{i}-{j}"] = nirentan_increment
+                nirentan_increment += 1
+
+                if i < j:
+                    nirenpuku_mapping[f"{i}-{j}"] = nirenpuku_increment
+                    nirenpuku_increment += 1
+
+                for k in range(1, num_racers + 1):
+                    if j == k or i == k:
+                        continue
+
+                    sanrentan_mapping[f"{i}-{j}-{k}"] = sanrentan_increment
+                    sanrentan_increment += 1
+
+                    if i < j and j < k:
+                        sanrenpuku_mapping[f"{i}-{j}-{k}"] = sanrenpuku_increment
+                        sanrenpuku_increment += 1
+
+        match self.bet_type:
+            case BetType.tansyou:
+                return tansyou_mapping[self._format_order()]
+            case BetType.nirentan:
+                return nirentan_mapping[self._format_order()]
+            case BetType.nirenpuku:
+                return nirenpuku_mapping[self._format_order()]
+            case BetType.sanrentan:
+                return sanrentan_mapping[self._format_order()]
+            case BetType.sanrenpuku:
+                return sanrenpuku_mapping[self._format_order()]
+            case _:
+                raise ValueError(f"bet_type {self.bet_type} is not supported")
