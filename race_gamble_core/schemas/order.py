@@ -88,7 +88,11 @@ class Order(BaseModel, frozen=True):
         if len(courses) == 1:
             return cls(bet_type=bet_type, first_course=int(courses[0]))
         elif len(courses) == 2:
-            return cls(bet_type=bet_type, first_course=int(courses[0]), second_course=int(courses[1]))
+            return cls(
+                bet_type=bet_type,
+                first_course=int(courses[0]),
+                second_course=int(courses[1]),
+            )
         elif len(courses) == 3:
             return cls(
                 bet_type=bet_type,
@@ -118,7 +122,9 @@ class Order(BaseModel, frozen=True):
 
             case BetType.sanrenpuku:
                 assert self.second_course is not None and self.third_course is not None
-                sorted_courses = sorted([self.first_course, self.second_course, self.third_course])
+                sorted_courses = sorted(
+                    [self.first_course, self.second_course, self.third_course]
+                )
                 return f"{sorted_courses[0]}-{sorted_courses[1]}-{sorted_courses[2]}"
             case _:
                 raise ValueError(f"bet_type {self.bet_type} is not supported")
@@ -135,7 +141,9 @@ class Order(BaseModel, frozen=True):
             bet_type = BetType.nirentan
 
             try:
-                cls.create_from_str_order(bet_type=BetType.nirenpuku, order_str=order_str)
+                cls.create_from_str_order(
+                    bet_type=BetType.nirenpuku, order_str=order_str
+                )
             except ValueError:
                 raise ValueError("invalid order for nirenpuku")
 
@@ -143,7 +151,9 @@ class Order(BaseModel, frozen=True):
             bet_type = BetType.sanrentan
 
             try:
-                cls.create_from_str_order(bet_type=BetType.sanrenpuku, order_str=order_str)
+                cls.create_from_str_order(
+                    bet_type=BetType.sanrenpuku, order_str=order_str
+                )
             except ValueError:
                 raise ValueError("invalid order for sanrenpuku")
 
@@ -164,14 +174,23 @@ class Order(BaseModel, frozen=True):
         match bet_type:
             case BetType.tansyou:
                 return sorted(
-                    list(set(cls(bet_type=BetType.tansyou, first_course=i) for i in range(1, num_racers + 1)))
+                    list(
+                        set(
+                            cls(bet_type=BetType.tansyou, first_course=i)
+                            for i in range(1, num_racers + 1)
+                        )
+                    )
                 )
 
             case BetType.nirentan:
                 return sorted(
                     list(
                         set(
-                            cls(bet_type=BetType.nirentan, first_course=i, second_course=j)
+                            cls(
+                                bet_type=BetType.nirentan,
+                                first_course=i,
+                                second_course=j,
+                            )
                             for i in range(1, num_racers + 1)
                             for j in range(1, num_racers + 1)
                             if i != j
@@ -183,7 +202,11 @@ class Order(BaseModel, frozen=True):
                 return sorted(
                     list(
                         set(
-                            cls(bet_type=BetType.nirenpuku, first_course=i, second_course=j)
+                            cls(
+                                bet_type=BetType.nirenpuku,
+                                first_course=i,
+                                second_course=j,
+                            )
                             for i in range(1, num_racers + 1)
                             for j in range(1, num_racers + 1)
                             if i != j
@@ -195,7 +218,12 @@ class Order(BaseModel, frozen=True):
                 return sorted(
                     list(
                         set(
-                            cls(bet_type=BetType.sanrentan, first_course=i, second_course=j, third_course=k)
+                            cls(
+                                bet_type=BetType.sanrentan,
+                                first_course=i,
+                                second_course=j,
+                                third_course=k,
+                            )
                             for i in range(1, num_racers + 1)
                             for j in range(1, num_racers + 1)
                             for k in range(1, num_racers + 1)
@@ -208,7 +236,12 @@ class Order(BaseModel, frozen=True):
                 return sorted(
                     list(
                         set(
-                            cls(bet_type=BetType.sanrenpuku, first_course=i, second_course=j, third_course=k)
+                            cls(
+                                bet_type=BetType.sanrenpuku,
+                                first_course=i,
+                                second_course=j,
+                                third_course=k,
+                            )
                             for i in range(1, num_racers + 1)
                             for j in range(1, num_racers + 1)
                             for k in range(1, num_racers + 1)
@@ -220,8 +253,9 @@ class Order(BaseModel, frozen=True):
             case _:
                 raise ValueError(f"bet_type {bet_type} is not supported")
 
+    @staticmethod
     @lru_cache(maxsize=None)
-    def _prepare_order_idx_map(self, num_racers: int, bet_type: BetType) -> dict[str, int]:
+    def _prepare_order_idx_map(num_racers: int, bet_type: BetType) -> dict[str, int]:
         """Orderを0-indexedのラベルに変換するためのマッピングを準備する"""
         mapping = {}
         idx = 0
@@ -268,6 +302,29 @@ class Order(BaseModel, frozen=True):
         order_idx_map = self._prepare_order_idx_map(num_racers, self.bet_type)
 
         if order_str not in order_idx_map:
-            raise ValueError(f"Order {order_str} is not valid for bet_type {self.bet_type}")
+            raise ValueError(
+                f"Order {order_str} is not valid for bet_type {self.bet_type}"
+            )
 
         return order_idx_map[order_str]
+
+    @classmethod
+    def idx_to_order(
+        cls, order_idx: int, bet_type: BetType, num_racers: int = 6
+    ) -> Self:
+        """0-indexedのラベルからOrderに変換する"""
+
+        order_idx_map = cls._prepare_order_idx_map(num_racers, bet_type)
+        reverse_map = {v: k for k, v in order_idx_map.items()}
+
+        if order_idx not in reverse_map:
+            raise ValueError(
+                f"Order index {order_idx} is not valid for bet_type {bet_type}"
+            )
+        try:
+            order_str = reverse_map[order_idx]
+        except KeyError:
+            raise ValueError(
+                f"Order index {order_idx} is not valid for bet_type {bet_type}"
+            )
+        return cls.create_from_str_order(order_str=order_str, bet_type=bet_type)
