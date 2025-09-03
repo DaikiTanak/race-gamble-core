@@ -7,6 +7,48 @@ from pydantic import BaseModel, field_validator, model_serializer, model_validat
 from .bet_type import BetType
 
 
+@lru_cache(maxsize=None)
+def _prepare_order_idx_map(num_racers: int, bet_type: BetType) -> dict[str, int]:
+    """Orderを0-indexedのラベルに変換するためのマッピングを準備する"""
+    mapping = {}
+    idx = 0
+    match bet_type:
+        case BetType.tansyou:
+            return {str(i): i - 1 for i in range(1, num_racers + 1)}
+        case BetType.nirentan:
+            for i in range(1, num_racers + 1):
+                for j in range(1, num_racers + 1):
+                    if i != j:
+                        mapping[f"{i}-{j}"] = idx
+                        idx += 1
+            return mapping
+        case BetType.nirenpuku:
+            for i in range(1, num_racers + 1):
+                for j in range(1, num_racers + 1):
+                    if i < j:
+                        mapping[f"{i}-{j}"] = idx
+                        idx += 1
+            return mapping
+        case BetType.sanrentan:
+            for i in range(1, num_racers + 1):
+                for j in range(1, num_racers + 1):
+                    for k in range(1, num_racers + 1):
+                        if i != j and j != k and i != k:
+                            mapping[f"{i}-{j}-{k}"] = idx
+                            idx += 1
+            return mapping
+        case BetType.sanrenpuku:
+            for i in range(1, num_racers + 1):
+                for j in range(1, num_racers + 1):
+                    for k in range(1, num_racers + 1):
+                        if i < j and j < k:
+                            mapping[f"{i}-{j}-{k}"] = idx
+                            idx += 1
+            return mapping
+        case _:
+            raise ValueError(f"bet_type {bet_type} is not supported")
+
+
 class Order(BaseModel, frozen=True):
     """着順(Order)に関する基底クラス。連複での順番ソートなどのロジックを内包する
     利用する際には 2連単や3連単などの`bet_type`をメンバーに追加する
@@ -253,53 +295,11 @@ class Order(BaseModel, frozen=True):
             case _:
                 raise ValueError(f"bet_type {bet_type} is not supported")
 
-    @staticmethod
-    @lru_cache(maxsize=None)
-    def _prepare_order_idx_map(num_racers: int, bet_type: BetType) -> dict[str, int]:
-        """Orderを0-indexedのラベルに変換するためのマッピングを準備する"""
-        mapping = {}
-        idx = 0
-        match bet_type:
-            case BetType.tansyou:
-                return {str(i): i - 1 for i in range(1, num_racers + 1)}
-            case BetType.nirentan:
-                for i in range(1, num_racers + 1):
-                    for j in range(1, num_racers + 1):
-                        if i != j:
-                            mapping[f"{i}-{j}"] = idx
-                            idx += 1
-                return mapping
-            case BetType.nirenpuku:
-                for i in range(1, num_racers + 1):
-                    for j in range(1, num_racers + 1):
-                        if i < j:
-                            mapping[f"{i}-{j}"] = idx
-                            idx += 1
-                return mapping
-            case BetType.sanrentan:
-                for i in range(1, num_racers + 1):
-                    for j in range(1, num_racers + 1):
-                        for k in range(1, num_racers + 1):
-                            if i != j and j != k and i != k:
-                                mapping[f"{i}-{j}-{k}"] = idx
-                                idx += 1
-                return mapping
-            case BetType.sanrenpuku:
-                for i in range(1, num_racers + 1):
-                    for j in range(1, num_racers + 1):
-                        for k in range(1, num_racers + 1):
-                            if i < j and j < k:
-                                mapping[f"{i}-{j}-{k}"] = idx
-                                idx += 1
-                return mapping
-            case _:
-                raise ValueError(f"bet_type {bet_type} is not supported")
-
     def to_order_idx(self, num_racers: int = 6) -> int:
         """Orderを0-indexedのラベルに変換する"""
 
         order_str = self._format_order()
-        order_idx_map = self._prepare_order_idx_map(num_racers, self.bet_type)
+        order_idx_map = _prepare_order_idx_map(num_racers, self.bet_type)
 
         if order_str not in order_idx_map:
             raise ValueError(
@@ -314,7 +314,7 @@ class Order(BaseModel, frozen=True):
     ) -> Self:
         """0-indexedのラベルからOrderに変換する"""
 
-        order_idx_map = cls._prepare_order_idx_map(num_racers, bet_type)
+        order_idx_map = _prepare_order_idx_map(num_racers, bet_type)
         reverse_map = {v: k for k, v in order_idx_map.items()}
 
         if order_idx not in reverse_map:
